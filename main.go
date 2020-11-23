@@ -2,6 +2,7 @@ package tgbotroute
 
 import (
 	"log"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -70,7 +71,8 @@ func MakeHandler(token string) *Router {
 }
 
 func (router *Router) Work(msg *tgbotapi.Message) {
-	if val, ok := router.path[msg.Text]; ok {
+	command := strings.Split(msg.Text, " ")[0]
+	if val, ok := router.path[command]; ok {
 		nmsg := tgbotapi.NewMessage(msg.Chat.ID, val(msg))
 		router.totg <- nmsg
 
