@@ -8,7 +8,7 @@ import (
 )
 
 type Router struct {
-	path   map[string]func(msg *tgbotapi.Message) string
+	path   map[string]interface{}
 	fromtg chan *tgbotapi.Message
 	totg   chan tgbotapi.MessageConfig
 	token  string
@@ -62,7 +62,7 @@ func (router *Router) Handle(s string, f func(msg *tgbotapi.Message) string) {
 
 func MakeHandler(token string) *Router {
 	r := &Router{
-		path:   make(map[string]func(msg *tgbotapi.Message) string),
+		path:   make(map[string]interface{}),
 		fromtg: make(chan *tgbotapi.Message),
 		totg:   make(chan tgbotapi.MessageConfig),
 		token:  token,
@@ -72,15 +72,19 @@ func MakeHandler(token string) *Router {
 
 func (router *Router) Work(msg *tgbotapi.Message) {
 	command := strings.Split(msg.Text, " ")[0]
-	if val, ok := router.path[command]; ok {
+	if val, ok := router.path[command].(func(*tgbotapi.Message) string); ok {
 		nmsg := tgbotapi.NewMessage(msg.Chat.ID, val(msg))
 		router.totg <- nmsg
 
+	} else if val, ok := router.path["/ontext"].(func(*tgbotapi.Message) string); ok {
+		nmsg := tgbotapi.NewMessage(msg.Chat.ID, val(msg))
+		router.totg <- nmsg
 	} else {
 
-		nmsg := tgbotapi.NewMessage(msg.Chat.ID, "command not defined")
+		nmsg := tgbotapi.NewMessage(msg.Chat.ID, "No command")
 		router.totg <- nmsg
 	}
+
 }
 
 func (router *Router) Listen() {
